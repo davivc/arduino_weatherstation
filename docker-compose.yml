@@ -1,0 +1,47 @@
+version: "3.7"
+services:
+  dynamodb:
+    image: amazon/dynamodb-local
+    stdin_open: true
+    tty: true
+    volumes:
+      - "dynamo_data:/home/dynamodblocal/data"
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=false
+      - AWS_DEFAULT_REGION=us_east-2
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data/"
+    networks:
+      - ecs-local-network
+    user: root
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      DYNAMO_ENDPOINT: "http://dynamodb:8000"
+      AWS_REGION: "us-west-2"
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+    depends_on:
+      - dynamodb
+    networks:
+      - ecs-local-network
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    networks:
+      - ecs-local-network
+
+volumes:
+  dynamo_data:
+
+networks:
+  ecs-local-network:
+    external: true
