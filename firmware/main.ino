@@ -8,48 +8,61 @@
 #define SEALEVELPRESSURE_HPA (1013.25)
 
 // Initialize BME280
-#define BME_SDA 2
-#define BME_SCL 3
+#define BME_SDA A4
+#define BME_SCL A5
 Adafruit_BME280 bme; // I2C
 
-// Sound Sensor Pin
-#define SOUND_SENSOR_PIN A0
-
 // Initialize the LCD. The address (0x27) and size (16, 2) may vary for your display
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+int lcdCols = 16;
+int lcdRows = 2;
+LiquidCrystal_I2C lcd(0x27, lcdCols, lcdRows);
 
-const char* ssid = "YOUR_SSID";
-const char* password = "YOUR_PASSWORD";
+const char* ssid = "arduino";
+const char* password = "arduino1234";
 
 unsigned long lastPostTime = 0;
+bool showPressure = false;
+
 
 void setup() {
     Serial.begin(9600);
-    delay(100);
+    while (!Serial) {
+        delay(10);
+    }
 
-    // 1. Check BME280 sensor
+    // 1. Initialize display
+    lcd.init(); // Initialize the LCD
+    lcd.backlight(); // Turn on the backlight
+    lcd.setCursor(0, 0);
+    lcd.print("Hello, there!");
+    lcd.setCursor(0, 1);
+    lcd.print("Loading data...");
+
+    // 2. Check BME280 sensor
     if (!bme.begin(0x76)) {
-        Serial.println("Could not find a valid BME280 sensor, check wiring!");
+        clearLCDLine(1);
+        lcd.print("Could not find BME280 sensor, check wiring!");
+        Serial.println("Could not find BME280 sensor, check wiring!");
         while (1);
     }
+
+    clearLCDLine(1);
+    lcd.setCursor(0, 1);
+    lcd.print("WiFi Setup");
 
     // 2. Connect to WiFi
     WiFi.begin(ssid, password);
 
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
+        clearLCDLine(1);
+        lcd.print("Loading data...");
         Serial.println("Connecting to WiFi...");
     }
 
+    clearLCDLine(1);
+    lcd.print("Connected to WiFi");
     Serial.println("Connected to WiFi");
-
-    // 3. Initialize sound sensor
-    pinMode(SOUND_SENSOR_PIN, INPUT);
-
-
-    // 4. Initialize display
-    lcd.init();
-    lcd.backlight();
 }
 
 void loop() {
@@ -57,20 +70,23 @@ void loop() {
     float humidity = bme.readHumidity();
     float pressure = bme.readPressure() / 100.0F;
 
-    // Display the BME280 data on the display
-    displayData(temperature, humidity, pressure);
-
-    // If a clapping sound is detected, speak the current temperature, humidity, and pressure
-    // ...
+    // Get weather API
+    String message = "Nublado com chuvas! ";
 
     unsigned long currentTime = millis();
     if (currentTime - lastPostTime > 60000) {
         lastPostTime = currentTime;
 
+        // Display the BME280 data on the display
+        displayData(temperature, humidity, pressure, showPressure, message);
+
         // Post BME280 data to the endpoint
         postData(temperature, humidity, pressure);
+        
         // Regularly consume an endpoint to check if it's going to rain
-        checkRain();        
+        checkRain();
+
+        showPressure = !showPressure;     
     }
 }
 
@@ -110,4 +126,12 @@ void checkRain() {
         }
     }
     http.end();
+}
+
+void clearLCDLine(int line) {
+    // Clear the line
+    lcd.setCursor(0, line); // Set cursor to the beginning of the first line
+    for(int i = 0; i < lcdCols; i++) {
+        lcd.print(" "); // Overwrite the line with spaces
+    }
 }
