@@ -1,4 +1,5 @@
 version: "3.7"
+name: arduino_weather
 services:
   dynamodb:
     image: amazon/dynamodb-local
