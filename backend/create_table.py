@@ -1,25 +1,20 @@
 import boto3
 
-dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+session = boto3.Session(region_name="us-west-2")
+
+dynamodb = session.resource("dynamodb", endpoint_url="http://dynamodb:8000")
 
 table = dynamodb.create_table(
-    TableName='BME280Data',
+    TableName="BME280Data",
     KeySchema=[
-        {
-            'AttributeName': 'date',
-            'KeyType': 'HASH'  # Partition key
-        }
+        {"AttributeName": "id", "KeyType": "HASH"},  # Primary key
+        {"AttributeName": "date", "KeyType": "RANGE"},  # Sort key
     ],
     AttributeDefinitions=[
-        {
-            'AttributeName': 'date',
-            'AttributeType': 'S'
-        },
+        {"AttributeName": "id", "AttributeType": "S"},
+        {"AttributeName": "date", "AttributeType": "S"},
     ],
-    ProvisionedThroughput={
-        'ReadCapacityUnits': 10,
-        'WriteCapacityUnits': 10
-    }
+    ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
 )
 
 print("Table status:", table.table_status)

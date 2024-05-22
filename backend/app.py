@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify
 import boto3
+import uuid
+from decimal import Decimal
+from datetime import datetime
 
 app = Flask(__name__)
 app.debug = True
@@ -14,6 +17,17 @@ table = dynamodb.Table("BME280Data")
 def bme280_data():
     if request.method == "POST":
         data = request.get_json()
+        # Convert float values to Decimal
+        for key, value in data.items():
+            if isinstance(value, float):
+                data[key] = Decimal(str(value))
+
+        # Add id as key
+        data["id"] = str(uuid.uuid4())
+
+        # Add date as key
+        data["date"] = datetime.now().isoformat()
+
         table.put_item(Item=data)
         return jsonify({"message": "Data received"}), 200
 
