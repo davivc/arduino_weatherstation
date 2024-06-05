@@ -4,8 +4,7 @@
 #include <Adafruit_BME280.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <WiFiClientSecure.h>
-// #include <WiFiClient.h>
+//#include <WiFiClient.h>
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -27,7 +26,8 @@ const char* password = "ai_dinamica";
 
 unsigned long lastPostTime = 0;
 
-WiFiClientSecure client;
+WiFiClient client;
+HTTPClient http;
 
 void setup() {
   Serial.println("Starting Arduino...");
@@ -42,7 +42,7 @@ void setup() {
   pinMode(bluePin, OUTPUT);
 
   // 1. Initialize display
-  lightOn("blue");
+  lightOn("yellow");
   Serial.println("Initializing display...");
   lcd.init(); // Initialize the LCD
   lcd.backlight(); // Turn on the backlight
@@ -79,10 +79,12 @@ void setup() {
       Serial.println("Connecting to WiFi...");
   }
 
+
   clearLCDLine(1);
   lcd.setCursor(0, 1);
   lcd.print("Connected!");
-  Serial.println("Connected to WiFi");
+  Serial.print("Connected to WiFi: ");
+  Serial.println(WiFi.localIP());
   lightOn("green");
 
   delay(5000);
@@ -104,7 +106,7 @@ void loop() {
     displayData(temperature, humidity, pressure);
 
     // Post BME280 data to the endpoint
-    // postData(temperature, humidity, pressure);
+    postData(temperature, humidity, pressure);
   }
 }
 
@@ -159,12 +161,23 @@ void loopMessage(String phrase, int loop) {
   }
 }
 
-// void postData(float temperature, float humidity, float pressure) {
+void postData(float temperature, float humidity, float pressure) {
+    Serial.print("Data Sent! ");
+    HTTPClient http;
+    http.begin(client, "http://192.168.43.137:5000/bme280");
+    http.addHeader("Content-Type", "application/json");
+    String postData = String("{\"temperature\":") + temperature + ",\"humidity\":" + humidity + ",\"pressure\":" + pressure + "}";
+    int httpCode = http.POST(postData);
+    Serial.println(httpCode);
+    http.end();
+}
+
+// void getData() {
 //     HTTPClient http;
-//     http.begin("YOUR_ENDPOINT");
-//     http.addHeader("Content-Type", "application/json");
-//     String postData = String("{\"temperature\":") + temperature + ",\"humidity\":" + humidity + ",\"pressure\":" + pressure + "}";
-//     int httpCode = http.POST(postData);
+//     http.begin(client, "http://192.168.43.137:5000/bme280");
+//     int httpCode = http.GET();
+//     Serial.println(httpCode);
+//     Serial.println(http.getString());
 //     http.end();
 // }
 
