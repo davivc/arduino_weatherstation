@@ -8,6 +8,16 @@ The objective of the discipline was to build an IoT using Arduino + Wifi to send
 
 ## Structure
 
+## Setup
+
+```bash
+docker-compose build
+```
+
+```bash
+docker-compose up
+```
+
 ### Arduino
 
 
